@@ -25,6 +25,7 @@ library
       Lib
       Operators
       State
+      StateTree
   other-modules:
       Paths_xtile
   autogen-modules:
