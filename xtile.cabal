@@ -58,6 +58,8 @@ test-suite xtile-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
+      OperatorTests
+      StateTests
       Paths_xtile
   autogen-modules:
       Paths_xtile

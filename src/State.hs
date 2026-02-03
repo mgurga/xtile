@@ -8,7 +8,7 @@ data State = State {
     size :: Int, -- side length of board
     board :: [Int], -- will be size*size length
     solved :: Bool
-} deriving (Show)
+} deriving (Show, Eq)
 
 -- helper function to recursivly countdown
 solved_board :: (Int) -> [Int]
