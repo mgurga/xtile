@@ -20,9 +20,9 @@ operatorTests = testGroup "Operator tests"
       (blank_index ([0, 7, 8, 6, 5, 3, 2, 1])) @?= 0
 
   , testCase "Move blank up test 1" $
-      (board (move_blank_up (solved_state 3))) @?= [8, 7, 6,
-                                                    5, 4, 0,
-                                                    2, 1, 3]
+      (board (move_blank_up (solved_state 3))) @?= [1, 2, 3,
+                                                    4, 5, 0,
+                                                    7, 8, 6]
 
     -- should not change board b/c blank tile is in top row
   , testCase "Move blank up test 2" $ do
@@ -47,19 +47,19 @@ operatorTests = testGroup "Operator tests"
         [1, 0, 3, 2]
 
   , testCase "Move blank down test 1" $
-      (board (move_blank_down (solved_state 3))) @?= [8, 7, 6,
-                                                      5, 4, 3,
-                                                      2, 1, 0]
+      (board (move_blank_down (solved_state 3))) @?= [1, 2, 3,
+                                                      4, 5, 6,
+                                                      7, 8, 0]
 
   , testCase "Move blank down test 2" $ do
       let test_state = State {
         solved=False, size=2, board=[
-            3, 0,
-            1, 2
+            1, 0,
+            3, 2
         ]
       }
       (move_blank_down (test_state)) @?= 
-        State {solved=True, size=2, board=[3, 2, 1, 0]}
+        State {solved=True, size=2, board=[1, 2, 3, 0]}
 
   , testCase "Move blank down test 3" $ do
       let test_state = State {
@@ -73,9 +73,9 @@ operatorTests = testGroup "Operator tests"
         [8, 4, 6, 5, 1, 3, 2, 0, 7]
 
   , testCase "Move blank left test 1" $
-      (board (move_blank_left (solved_state 3))) @?= [8, 7, 6,
-                                                      5, 4, 3,
-                                                      2, 0, 1]
+      (board (move_blank_left (solved_state 3))) @?= [1, 2, 3,
+                                                      4, 5, 6,
+                                                      7, 0, 8]
 
   , testCase "Move blank left test 2" $ do
       let test_state = State {
@@ -99,9 +99,9 @@ operatorTests = testGroup "Operator tests"
         [1, 3, 0, 2]
 
   , testCase "Move blank right test 1" $
-      (board (move_blank_right (solved_state 3))) @?= [8, 7, 6,
-                                                       5, 4, 3,
-                                                       2, 1, 0]
+      (board (move_blank_right (solved_state 3))) @?= [1, 2, 3,
+                                                       4, 5, 6,
+                                                       7, 8, 0]
 
   , testCase "Move blank right test 2" $ do
       let test_state = State {
@@ -117,10 +117,10 @@ operatorTests = testGroup "Operator tests"
   , testCase "Move blank right test 3" $ do
       let test_state = State {
         solved=False, size=2, board=[
-            3, 2,
-            0, 1
+            1, 2,
+            0, 3
         ]
       }
       (move_blank_right (test_state)) @?=
-        State {solved=True, size=2, board=[3, 2, 1, 0]}
+        State {solved=True, size=2, board=[1, 2, 3, 0]}
   ]
