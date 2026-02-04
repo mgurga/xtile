@@ -32,6 +32,8 @@ ghc-options:
 
 library:
   source-dirs: src
+  dependencies:
+  - random-shuffle
 
 executables:
   xtile-exe:
@@ -45,7 +47,6 @@ executables:
     - xtile
     - tasty
     - tasty-hunit
-    - random-shuffle
 
 tests:
   xtile-test:
