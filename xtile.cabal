@@ -22,10 +22,13 @@ source-repository head
 
 library
   exposed-modules:
+      Algos
       Lib
       Operators
+      Search
       State
       StateTree
+      Utils
   other-modules:
       Paths_xtile
   autogen-modules:
@@ -58,8 +61,10 @@ test-suite xtile-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
+      HeuristicsTests
       OperatorTests
       StateTests
+      UtilsTests
       Paths_xtile
   autogen-modules:
       Paths_xtile
