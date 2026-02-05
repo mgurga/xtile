@@ -26,9 +26,9 @@ switch_tile :: State -> Int -> Int -> State
 switch_tile given fsti sndi = do
     let new_board = zipWith (\i element ->
             if i == fsti then
-                (board given)!!sndi -- if at blank tile index replace the 0 with above number
+                (board given)!!sndi -- if at blank tile index replace the 0 with target number
             else if i == sndi then 
-                (board given)!!fsti -- if at above number replace the value with blank tile (0)
+                (board given)!!fsti -- if at target number replace the value with blank tile (0)
             else element)
             [0..]
             (board given)

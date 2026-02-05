@@ -16,7 +16,7 @@ misplaced_tile_heuristic given = do
             (board solve)
     length (filter (\v -> v == False) mask) -- return number of Falses in mask boolean list
 
--- helper to find distance b/w a single tile and it goal position
+-- helper to find distance b/w a tile and its goal position
 -- arguments are given state, goal state, and target tile. returns distance
 man_tile_dist :: State -> State -> Int -> Int
 man_tile_dist given goal target_val = do
