@@ -1,7 +1,10 @@
-module Algos (misplaced_tile_heuristic, manhattan_distance_heuristic) where
+module Algos (uniform_cost_heuristic, misplaced_tile_heuristic, manhattan_distance_heuristic) where
 
 import State (State(..), solved_state)
 import Utils (target_row_col, sum_list)
+
+uniform_cost_heuristic :: State -> Int
+uniform_cost_heuristic _ = 0
 
 misplaced_tile_heuristic :: State -> Int
 misplaced_tile_heuristic given = do
