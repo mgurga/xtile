@@ -1,9 +1,9 @@
 module Search (search, SearchOptions(..), SearchResults(..)) where
 
 import State
-import Queue
 import Lib (get_children)
 import qualified Data.Set as Set
+import qualified Data.PQueue.Prio.Min as MinPQueue
 import Data.List (sortBy)
 
 -- these settings are passed to the search function to start the search
@@ -22,8 +22,9 @@ data StateResults = StateResults {
 -- internal search data b/w recursive search calls
 data SearchInternal = SearchInternal {
     seen_states :: Set.Set State,
-    queue :: Queue StateResults,
+    queue :: MinPQueue.MinPQueue Int StateResults,
     best_results :: SearchResults,
+    interim_expanded :: Int,
     failed :: Bool,
     done :: Bool
 }
@@ -36,16 +37,6 @@ data SearchResults = SearchResults {
     cost :: Int
 } deriving (Show, Eq)
 
--- find best results given 2 search states
-results_compare :: SearchResults -> SearchResults -> SearchResults
-results_compare a b = do
-    -- compare costs, then depths, then expaneded nodes
-    if (cost a) == (cost b) then do
-        if (depth a) == (depth b) then do
-            if (expanded_nodes a) < (expanded_nodes b) then a else b
-        else if (depth a) < (depth b) then a else b
-    else if (cost a) < (cost b) then a else b
-
 -- start search by passing options to astar_search
 search :: SearchOptions -> Maybe SearchResults
 search options = do
@@ -54,13 +45,14 @@ search options = do
             SearchInternal {
                 seen_states=(Set.empty),
                 queue=
-                    (Queue.singleton -- create queue with only the start node and 0 depth
+                    (MinPQueue.singleton -- create queue with only the start node and 0 depth
+                        ((heuristic_func options) (start_state options))
                         StateResults {
                             state=(start_state options),
                             results=SearchResults {depth=0, expanded_nodes=0, largest_queue=0, cost=0}}),
                 best_results=
                     SearchResults {depth=maxBound, expanded_nodes=maxBound, largest_queue=maxBound, cost=maxBound},
-                done=False, failed=False
+                interim_expanded=0, done=False, failed=False
             }
     if (failed res) then
         Nothing
@@ -79,25 +71,26 @@ sort_states given h = do
 -- this function recursivly calls itself with SearchInternal which holds the queue and final result
 astar_search :: SearchOptions -> SearchInternal -> SearchInternal
 astar_search options internal = do
-    let front = Queue.dequeue (queue internal) -- get first state in queue
+    let front = MinPQueue.minViewWithKey (queue internal) -- get first state in queue
     let out = case front of
             Nothing -> (
                 -- queue is empty return "failure"
                 SearchInternal {
                     seen_states=(seen_states internal),
-                    queue=(Queue.empty),
+                    queue=(MinPQueue.empty),
                     best_results=(best_results internal),
                     failed=True,
-                    done=True
+                    done=True,
+                    interim_expanded=(interim_expanded internal)
                 })
-            Just (val, tl) -> do
+            Just ((_, val), tl) -> do
                 if board (state val) == board (end_state options) || done internal then
                     -- first item in queue is goal state, mark as done and return
                     SearchInternal {
                         seen_states=(seen_states internal),
-                        queue=(tl),
+                        queue=tl,
                         best_results=(results val),
-                        done=True, failed=False
+                        interim_expanded=(interim_expanded internal), done=True, failed=False
                     }
                 else do
                     let children = (get_children (state val))
@@ -111,7 +104,7 @@ astar_search options internal = do
                          children
 
                     -- sort children by lowest cost
-                    let sorted_children = 
+                    let sorted_children =
                          sort_states reduced_children (heuristic_func options)
 
                     -- create sorted list of the form (State, StateResults)
@@ -119,7 +112,7 @@ astar_search options internal = do
                          Prelude.map
                           (\sc -> (sc, SearchResults {
                               depth = (depth (results val)) + 1,
-                              expanded_nodes = (expanded_nodes (results val)) + (length sorted_children),
+                              expanded_nodes = (interim_expanded internal),
                               largest_queue = (length tl),
                               cost = (depth (results val)) + 1 + ((heuristic_func options) sc)
                           }))
@@ -128,14 +121,15 @@ astar_search options internal = do
                     -- add all children nodes to queue with new results
                     let newqueue =
                          foldr (\(child, childstats) acc ->
-                             (Queue.enqueue
+                             (MinPQueue.insert
+                                 (cost childstats)
                                  StateResults {state=child, results=childstats}
                              acc)
                          ) (tl) (sorted_stats)
 
                     -- add children to seen set
-                    let newseen = 
-                         foldr (\(child, _) acc -> 
+                    let newseen =
+                         foldr (\(child, _) acc ->
                             Set.insert child acc
                          ) (seen_states internal) sorted_stats
 
@@ -152,6 +146,7 @@ astar_search options internal = do
                             queue=newqueue,
                             done=False,
                             failed=best_child_results==(results val),
-                            best_results=(results_compare (best_child_results) (results val))
+                            interim_expanded=(interim_expanded internal) + 1,
+                            best_results=(best_child_results)
                         }
     out

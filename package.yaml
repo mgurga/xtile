@@ -34,8 +34,8 @@ library:
   source-dirs: src
   dependencies:
   - random-shuffle
-  - queues
   - containers
+  - pqueue
 
 executables:
   xtile-exe:
