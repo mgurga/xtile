@@ -72,4 +72,4 @@ move_blank_right start = do
       switch_tile start bi new_bi
 
 operators :: [State -> State]
-operators = [move_blank_up, move_blank_down, move_blank_left, move_blank_right]
+operators = [move_blank_left, move_blank_down, move_blank_right, move_blank_up]

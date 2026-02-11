@@ -24,6 +24,7 @@ data SearchInternal = SearchInternal {
     seen_states :: Set.Set State,
     queue :: Queue StateResults,
     best_results :: SearchResults,
+    failed :: Bool,
     done :: Bool
 }
 
@@ -46,7 +47,7 @@ results_compare a b = do
     else if (cost a) < (cost b) then a else b
 
 -- start search by passing options to astar_search
-search :: SearchOptions -> SearchResults
+search :: SearchOptions -> Maybe SearchResults
 search options = do
     let res = astar_search
             options
@@ -59,9 +60,12 @@ search options = do
                             results=SearchResults {depth=0, expanded_nodes=0, largest_queue=0, cost=0}}),
                 best_results=
                     SearchResults {depth=maxBound, expanded_nodes=maxBound, largest_queue=maxBound, cost=maxBound},
-                done=False
+                done=False, failed=False
             }
-    (best_results res)
+    if (failed res) then
+        Nothing
+    else
+        Just (best_results res)
 
 -- sort states by lowest cost based on given heuristic function
 sort_states :: [State] -> (State -> Int) -> [State]
@@ -83,16 +87,17 @@ astar_search options internal = do
                     seen_states=(seen_states internal),
                     queue=(Queue.empty),
                     best_results=(best_results internal),
+                    failed=True,
                     done=True
                 })
             Just (val, tl) -> do
-                if (state val) == (end_state options) then
+                if board (state val) == board (end_state options) || done internal then
                     -- first item in queue is goal state, mark as done and return
                     SearchInternal {
                         seen_states=(seen_states internal),
                         queue=(tl),
                         best_results=(results val),
-                        done=True
+                        done=True, failed=False
                     }
                 else do
                     let children = (get_children (state val))
@@ -108,7 +113,7 @@ astar_search options internal = do
                     -- sort children by lowest cost
                     let sorted_children = 
                          sort_states reduced_children (heuristic_func options)
-                    
+
                     -- create sorted list of the form (State, StateResults)
                     let sorted_stats =
                          Prelude.map
@@ -122,12 +127,12 @@ astar_search options internal = do
 
                     -- add all children nodes to queue with new results
                     let newqueue =
-                         foldr (\(child, childstats) acc -> 
-                            (Queue.enqueue
-                                StateResults {state=child, results=childstats}
-                            acc)
+                         foldr (\(child, childstats) acc ->
+                             (Queue.enqueue
+                                 StateResults {state=child, results=childstats}
+                             acc)
                          ) (tl) (sorted_stats)
-                    
+
                     -- add children to seen set
                     let newseen = 
                          foldr (\(child, _) acc -> 
@@ -135,13 +140,18 @@ astar_search options internal = do
                          ) (seen_states internal) sorted_stats
 
                     -- call astar_search with new queue and updated best_results
-                    let (_, best_child_results) = (sorted_stats!!0)
+                    let best_child_results =
+                         case sorted_stats of
+                             [] -> (results val) -- if children list is empty we've hit a dead end
+                             (_, sr):_ -> sr -- otherwise return best child results
+
                     astar_search
                         options
                         SearchInternal {
                             seen_states=newseen,
                             queue=newqueue,
                             done=False,
+                            failed=best_child_results==(results val),
                             best_results=(results_compare (best_child_results) (results val))
                         }
     out
