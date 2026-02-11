@@ -33,8 +33,7 @@ data SearchInternal = SearchInternal {
 data SearchResults = SearchResults {
     depth :: Int,
     largest_queue :: Int,
-    expanded_nodes :: Int,
-    cost :: Int
+    expanded_nodes :: Int
 } deriving (Show, Eq)
 
 -- start search by passing options to astar_search
@@ -49,9 +48,9 @@ search options = do
                         ((heuristic_func options) (start_state options))
                         StateResults {
                             state=(start_state options),
-                            results=SearchResults {depth=0, expanded_nodes=0, largest_queue=0, cost=0}}),
+                            results=SearchResults {depth=0, expanded_nodes=0, largest_queue=0}}),
                 best_results=
-                    SearchResults {depth=maxBound, expanded_nodes=maxBound, largest_queue=maxBound, cost=maxBound},
+                    SearchResults {depth=maxBound, expanded_nodes=maxBound, largest_queue=maxBound},
                 interim_expanded=0, done=False, failed=False
             }
     if (failed res) then
@@ -113,8 +112,7 @@ astar_search options internal = do
                           (\sc -> (sc, SearchResults {
                               depth = (depth (results val)) + 1,
                               expanded_nodes = (interim_expanded internal),
-                              largest_queue = (length tl),
-                              cost = (depth (results val)) + 1 + ((heuristic_func options) sc)
+                              largest_queue = (length tl)
                           }))
                           sorted_children
 
@@ -122,7 +120,7 @@ astar_search options internal = do
                     let newqueue =
                          foldr (\(child, childstats) acc ->
                              (MinPQueue.insert
-                                 (cost childstats)
+                                 ((depth childstats) + ((heuristic_func options) child))
                                  StateResults {state=child, results=childstats}
                              acc)
                          ) (tl) (sorted_stats)
