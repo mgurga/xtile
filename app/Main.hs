@@ -6,6 +6,7 @@ import Search (search, SearchOptions(..), SearchResults (..))
 import Algos
 import System.Environment (getArgs)
 import Data.Foldable (for_)
+import Utils (random_states)
 
 print_help :: IO ()
 print_help = do
@@ -15,6 +16,8 @@ print_help = do
     putStrLn "\txtile n\t\tcreate random puzzle with n shuffles and solve"
     putStrLn "\txtile n0 n1 n2 n3 n4 n5 n6 n7 n8"
     putStrLn "\t\t\tcreates a 3x3 puzzle with n0-n8 as tiles (0 is blank tile)"
+    putStrLn "\txtile trials n"
+    putStrLn "\t\truns n trials for each algorithm and writes csv list to trials.txt"
 
 main :: IO ()
 main = do
@@ -30,6 +33,8 @@ main = do
         run_searches random_state goal_state
     else if length args == 1 && (args!!0 == "help" || args!!0 == "-h" || args!!0 == "--help") then
         print_help
+    else if length args == 2 && (args!!0 == "trials") then
+        run_trials (read (args!!1) :: Int)
     else if length args == 1 then do
         -- if one argument passed convert to Int and shuffle that many times
         random_state <- shuffle_state goal_state (read (args!!0) :: Int)
@@ -47,6 +52,69 @@ main = do
     else do
         putStrLn("invalid number of arguments")
         print_help
+
+run_trials :: Int -> IO ()
+run_trials times = do
+    let goal_state = solved_state 3
+
+    -- generate 'times' number of random states
+    rss <- random_states 50 times []
+
+    -- return a triple with (uniform cost trials, misplaced heuristic trials, manhattan trials)
+    let trials =
+         foldr (\start acc -> do
+            let ops = SearchOptions {
+                start_state=start,
+                end_state=goal_state,
+                heuristic_func=uniform_cost_heuristic,
+                keep_log=False
+            }
+            let uniform_trial =
+                 case search ops of
+                    Nothing -> ""
+                    Just res -> "uniform," ++ show (depth res) ++
+                                "," ++ show (largest_queue res) ++
+                                "," ++ show (expanded_nodes res)
+
+            let ops1 = SearchOptions {
+                start_state=start,
+                end_state=goal_state,
+                heuristic_func=misplaced_tile_heuristic,
+                keep_log=False
+            }
+            let misplaced_trial =
+                 case search ops1 of
+                    Nothing -> ""
+                    Just res -> "misplaced," ++ show (depth res) ++
+                                "," ++ show (largest_queue res) ++
+                                "," ++ show (expanded_nodes res)
+
+            let ops2 = SearchOptions {
+                start_state=start,
+                end_state=goal_state,
+                heuristic_func=manhattan_distance_heuristic,
+                keep_log=False
+            }
+            let manhattan_trial =
+                 case search ops2 of
+                    Nothing -> ""
+                    Just res -> "manhattan," ++ show (depth res) ++
+                                "," ++ show (largest_queue res) ++
+                                "," ++ show (expanded_nodes res)
+
+            acc ++ [(uniform_trial, misplaced_trial, manhattan_trial)]
+         ) [("algo,depth,largest_queue,expanded_nodes", "", "")] rss
+
+    let uarr = map (\(u, _, _) -> u) (trials)
+    for_ uarr putStrLn
+
+    let miarr = map (\(_, mi, _) -> mi) (trials)
+    for_ miarr putStrLn
+
+    let maarr = map (\(_, _, ma) -> ma) (trials)
+    for_ maarr putStrLn
+
+    writeFile "trials.txt" $ (unlines uarr ++ unlines miarr ++ unlines maarr)
 
 run_searches :: State -> State -> IO ()
 run_searches start goal = do

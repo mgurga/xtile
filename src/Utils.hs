@@ -1,6 +1,7 @@
-module Utils (sum_list, item_index, target_row_col) where
+module Utils (sum_list, item_index, target_row_col, random_states) where
 
-import State ( State(size, board) )
+import State ( State(size, board), solved_state )
+import Lib (shuffle_state)
 
 sum_list :: [Int] -> Int
 sum_list [] = 0
@@ -15,3 +16,10 @@ target_row_col :: State -> Int -> (Int, Int)
 target_row_col given target = do
     let given_index = item_index (board given) target
     (given_index `div` (size given), given_index `mod` (size given))
+
+-- given number of shuffles, n, and an initial list return n random stats
+random_states :: Int -> Int -> [State] -> IO [State]
+random_states _ 0 acc = return acc
+random_states n x acc = do
+    rs <- shuffle_state (solved_state 3) n
+    (random_states n (x - 1) (acc ++ [rs]))
