@@ -10,7 +10,8 @@ import Data.List (sortBy)
 data SearchOptions = SearchOptions {
     start_state :: State,
     end_state :: State,
-    heuristic_func :: (State -> Int)
+    heuristic_func :: (State -> Int),
+    keep_log :: Bool
 }
 
 -- helper data type to use with Queue
@@ -33,7 +34,8 @@ data SearchInternal = SearchInternal {
 data SearchResults = SearchResults {
     depth :: Int,
     largest_queue :: Int,
-    expanded_nodes :: Int
+    expanded_nodes :: Int,
+    state_log :: [String]
 } deriving (Show, Eq)
 
 -- start search by passing options to astar_search
@@ -48,9 +50,9 @@ search options = do
                         ((heuristic_func options) (start_state options))
                         StateResults {
                             state=(start_state options),
-                            results=SearchResults {depth=0, expanded_nodes=0, largest_queue=0}}),
+                            results=SearchResults {depth=0, expanded_nodes=0, largest_queue=0, state_log=[]}}),
                 best_results=
-                    SearchResults {depth=maxBound, expanded_nodes=maxBound, largest_queue=maxBound},
+                    SearchResults {depth=maxBound, expanded_nodes=maxBound, largest_queue=maxBound, state_log=[]},
                 interim_expanded=0, done=False, failed=False
             }
     if (failed res) then
@@ -106,13 +108,25 @@ astar_search options internal = do
                     let sorted_children =
                          sort_states reduced_children (heuristic_func options)
 
-                    -- create sorted list of the form (State, StateResults)
+                    -- create sorted list of the form [(State, StateResults)]
                     let sorted_stats =
                          Prelude.map
-                          (\sc -> (sc, SearchResults {
+                          (\sc -> do
+                            -- create new log with depth and heuristic
+                            let newlog = 
+                                 if (keep_log options) then 
+                                  (state_log (results val)) ++ 
+                                    [show sc ++ 
+                                        " g(n) = " ++ show ((depth (results val)) + 1) ++
+                                        " h(n) = " ++ 
+                                            show ((depth (results val)) + 1 + ((heuristic_func options) sc))]
+                                 else []
+                            -- returns tuple with (State, StateResults)
+                            (sc, SearchResults {
                               depth = (depth (results val)) + 1,
                               expanded_nodes = (interim_expanded internal),
-                              largest_queue = (length tl)
+                              largest_queue = (length tl),
+                              state_log = newlog
                           }))
                           sorted_children
 

@@ -2,9 +2,10 @@ module Main (main) where
 
 import State (solved_state, State (..))
 import Lib (shuffle_state)
-import Search (search, SearchOptions(..))
+import Search (search, SearchOptions(..), SearchResults (..))
 import Algos
 import System.Environment (getArgs)
+import Data.Foldable (for_)
 
 print_help :: IO ()
 print_help = do
@@ -49,32 +50,43 @@ main = do
 
 run_searches :: State -> State -> IO ()
 run_searches start goal = do
-    -- run search for manhattan distance heuristic
+    -- run search for uniform cost heuristic
     let ops = SearchOptions {
         start_state=start,
         end_state=goal,
-        heuristic_func=manhattan_distance_heuristic
+        heuristic_func=uniform_cost_heuristic,
+        keep_log=False
     }
     let results = search ops
-    putStrLn ("manhattan distance heuristic search: ")
-    putStrLn (show results)
+    putStrLn ("uniform cost search: ")
+    putStrLn (show results ++ "\n")
 
     -- run search for misplaced tile heuristic
     let ops1 = SearchOptions {
         start_state=start,
         end_state=goal,
-        heuristic_func=misplaced_tile_heuristic
+        heuristic_func=misplaced_tile_heuristic,
+        keep_log=False
     }
     let results1 = search ops1
     putStrLn ("misplaced tile heuristic search: ")
-    putStrLn ((show results1))
+    putStrLn (show results1 ++ "\n")
 
-    -- run search for uniform cost heuristic
+    -- run search for manhattan distance heuristic
     let ops2 = SearchOptions {
         start_state=start,
         end_state=goal,
-        heuristic_func=uniform_cost_heuristic
+        heuristic_func=manhattan_distance_heuristic,
+        keep_log=True
     }
     let results2 = search ops2
-    putStrLn ("uniform cost search: ")
-    putStrLn (show results2)
+    putStrLn ("manhattan distance heuristic search: ")
+    case results2 of
+        Nothing -> putStrLn "Nothing"
+        Just res -> do
+            putStrLn ("SearchResults { depth = " ++ show (depth res) ++ 
+                     ", largest_queue = " ++ show (largest_queue res) ++
+                     ", expanded_nodes = " ++ show (expanded_nodes res) ++ " }")
+            putStrLn "Logs:"
+            let logarr = map (\logline -> ("\t" ++ logline)) (state_log res)
+            for_ logarr putStrLn
